@@ -80,7 +80,45 @@ git push
 
 ```
 
+## 7) Customize what gets logged (exclude noise)
+If you want to hide chatty commands (e.g., git status, git log, git diff --stat), add an exclude filter inside tools/log_git_today.sh before it appends lines.
 
+```bash
+# Example: hide frequent noise
+EXCLUDE_REGEX='^(git status|git log|git diff --stat)$'
 
+# When selecting candidate lines, filter with awk:
+# ... | awk -v ex="$EXCLUDE_REGEX" '$0 !~ ex' | ...
 
+```
 
+- Add more commands by extending the regex with |, e.g. |git branch -v|git fetch origin.
+- Keep the pattern anchored (^ at start, $ at end) so only full-command matches are excluded.
+
+## 8) Troubleshooting
+### Nothing appended today
+- You may not have run any git ... commands yet today. Run a couple and re-run the collector.
+- On the first run after enabling timestamps, you might see a small “fallback” note; later sessions will append with exact dates.
+  
+### “not executable” errors
+```bash
+git update-index --chmod=+x tools/log_git_today.sh
+git update-index --chmod=+x tools/log_and_push.sh
+git commit -m "chore: mark scripts executable"
+git push
+
+```
+
+## 9) Design choices (snapshot)
+- Read the history file (~/.bash_history) instead of the interactive builtin.
+- Support both timestamped and plain histories.
+- Guarantee one header per day and de-duplicate appended lines.
+- Keep everything repo-native and Windows-friendly.
+
+  
+## 10) Security & privacy
+- The log captures only the commands you typed, not their output.
+- Avoid running or committing commands that include secrets (tokens, passwords, keys) in plain text.
+- If a command might reveal sensitive data, exclude it in the collector (see section 7’s EXCLUDE_REGEX).
+- Review tools/git-snippets.sh before pushing; remove any accidental sensitive lines.
+- This is a repo-visible log. Assume teammates and reviewers can read it.
