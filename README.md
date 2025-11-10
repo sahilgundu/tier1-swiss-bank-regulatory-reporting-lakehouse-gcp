@@ -46,5 +46,19 @@ During the parent‑bank integration (2023–2025), statutory filings **remained
 - Model gold marts from `docs/patterns/gold_marts.md`.
 - Export packs via `docs/exports.md` structure.
 
+  ---
+
+### 🧭 Git Study References
+
+This repository includes my personal Git study notes and live command tracker that demonstrate disciplined version control used across all my Data Engineering projects.
+
+| File | Purpose |
+|------|----------|
+| [`docs/git-commands-cheatsheet.md`](./docs/git-commands-cheatsheet.md) | Comprehensive reference of essential Git commands with context, explanations, and workflow notes. |
+| [`tools/git-snippets.sh`](./tools/git-snippets.sh) | Running log of actual Git commands executed during repo setup, experiments, and cleanup tasks. |
+
+> These files show my applied Git workflow discipline — from branching and commits to CI/CD hygiene — following industry practices for production-grade repositories.
+
+
 ## License
 MIT.
