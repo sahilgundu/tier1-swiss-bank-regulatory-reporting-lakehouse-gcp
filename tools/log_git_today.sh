@@ -1,88 +1,81 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 # ---------------------------------------------------------------------
-# Git Daily Command Collector — Git Bash (Windows) tolerant
-# Appends commands from TODAY (00:00–23:59 local) to git-snippets.sh.
-# Sources:
-#  A) ~/.bash_history with "# <epoch>" lines (best)
-#  B) history output with forced timestamps (good)
-#  C) last 300 plain history lines filtered to "git " (fallback)
-# De-duplicates against today's section.
+# Git Daily Command Collector — no use of `history` builtin (script-safe)
+# Reads ~/.bash_history only. Supports:
+#  - Timestamped entries (# <epoch> line before command)  -> filter "today".
+#  - Plain entries (no timestamps)                         -> take last 200.
+# Appends under "# ===== YYYY-MM-DD =====" in tools/git-snippets.sh
+# and de-duplicates within the day's section.
 # ---------------------------------------------------------------------
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="${SCRIPT_DIR}/git-snippets.sh"
-TODAY="$(date +%F)"   # e.g., 2025-11-11
+HIST_FILE="${HOME}/.bash_history"
+TODAY="$(date +%F)"  # e.g., 2025-11-11
 
 mkdir -p "${SCRIPT_DIR}"
 touch "${LOG_FILE}"
 
-# Ensure today's header exists once
+# Ensure today's header once
 if ! grep -q "^# ===== ${TODAY} =====" "${LOG_FILE}"; then
   printf '\n# ===== %s =====\n' "${TODAY}" >> "${LOG_FILE}"
 fi
 
-# --- helper: read existing lines for today (for de-dupe) ---
-existing_today() {
-  awk -v t="${TODAY}" '
-    BEGIN{block=0}
-    /^# ===== /{block = ($0 ~ t) }
-    block && !/^# ===== / && length($0)>0 {print}
-  ' "${LOG_FILE}" | sed 's/\r$//'
-}
+# Get existing lines for today (for de-dup)
+existing_today="$(awk -v t="${TODAY}" '
+  BEGIN{blk=0}
+  /^# ===== /{blk = ($0 ~ t); next}
+  blk && NF { print }
+' "${LOG_FILE}" | sed "s/\r$//")"
 
-# --- Source A: ~/.bash_history epoch pairs (# <epoch> then command) ---
-from_histfile=""
-if [ -f "${HOME}/.bash_history" ]; then
-  from_histfile="$(awk -v t="${TODAY}" '
+have_ts=0
+buf="$(mktemp)"; : > "${buf}"
+
+# Parse ~/.bash_history
+# With timestamps: lines like "# 1731300000" followed by the command
+if [ -f "${HIST_FILE}" ]; then
+  awk -v t="${TODAY}" '
     /^# [0-9]+$/ { ts = substr($0,3); next }
     {
       if (ts != "") {
-        if (strftime("%Y-%m-%d", ts) == t) print $0
+        d = strftime("%Y-%m-%d", ts)
+        if (d == t) print $0
         ts = ""
       }
     }
-  ' "${HOME}/.bash_history" | sed 's/\r$//')"
+  ' "${HIST_FILE}" > "${buf}"
+
+  if [ -s "${buf}" ]; then
+    have_ts=1
+  fi
 fi
 
-# --- Source B: in-memory history with forced timestamps ---
-from_inmem="$(HISTTIMEFORMAT="%F %T " history 2>/dev/null \
-  | awk -v t="${TODAY}" '
-      # " 123  2025-11-11 01:02:03  git commit -m x"
-      match($0, /^[[:space:]]*[0-9]+[[:space:]]+([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]+[0-9]{2}:[0-9]{2}:[0-9]{2}[[:space:]]+(.*)$/, m) {
-        if (m[1]==t) print m[2]
-      }
-    ' | sed 's/\r$//')"
-
-# --- Source C: plain history (no reliable timestamps) ---
-from_plain="$(history 2>/dev/null | tail -n 300 \
-  | sed -E 's/^[[:space:]]*[0-9]+[[:space:]]+([0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]][0-9]{2}:[0-9]{2}:[0-9]{2}[[:space:]]+)?//' \
-  | awk '/^git /' | sed 's/\r$//')"
-
-
-# If A or B yielded non-empty, prefer A∪B; else use C.
-choose_and_append() {
-  tmp_exist="$(mktemp)"; existing_today > "${tmp_exist}"
-
-  if [ -n "${from_histfile}" ] || [ -n "${from_inmem}" ]; then
-    printf "%s\n%s\n" "${from_histfile}" "${from_inmem}" \
-      | awk 'NF' | awk '!seen[$0]++' \
-      | grep -Fvx -f "${tmp_exist}" - 2>/dev/null \
-      >> "${LOG_FILE}"
-  else
-    # Fallback: assume last 300 "git " lines are today's (first run after enabling timestamps)
-    echo "# (fallback appended from recent session — timestamps were not yet enabled)" >> "${LOG_FILE}"
-    printf "%s\n" "${from_plain}" \
-      | awk 'NF' | awk '!seen[$0]++' \
-      | grep -Fvx -f "${tmp_exist}" - 2>/dev/null \
-      >> "${LOG_FILE}"
+# If no timestamped matches, fallback: last 200 non-# lines from hist file
+if [ "${have_ts}" -eq 0 ]; then
+  # Note marker once per day (only if today section has no commands yet)
+  if [ -z "${existing_today}" ]; then
+    echo "# (fallback from ~/.bash_history — timestamps not present)" >> "${LOG_FILE}"
   fi
 
-  rm -f "${tmp_exist}"
-}
+  # Take recent commands only, filter "git " lines
+  if [ -f "${HIST_FILE}" ]; then
+    grep -vE '^# [0-9]+' "${HIST_FILE}" | tail -n 200 \
+      | sed -E 's/^\s+//' | awk '/^git /' > "${buf}" || true
+  fi
+fi
 
-choose_and_append
+# De-duplicate: drop lines already in today’s block and within this batch
+append_tmp="$(mktemp)"
+printf "%s\n" "${existing_today}" > "${append_tmp}"   # seed with existing
+
+awk '
+  FNR==NR { seen[$0]=1; next }          # load existing
+  NF && !seen[$0]++ { print }           # print unique new lines
+' "${append_tmp}" "${buf}" >> "${LOG_FILE}"
+
+rm -f "${buf}" "${append_tmp}"
 
 # Report
-count_today="$(awk -v t="${TODAY}" 'f{c++} /^# ===== /{f=($0 ~ t)} END{print c+0}' "${LOG_FILE}")"
+count_today="$(awk -v t="${TODAY}" 'blk && NF{c++} /^# ===== /{blk=($0~t)} END{print c+0}' "${LOG_FILE}")"
 printf 'Appended commands for %s → %s (today total lines: %s)\n' "${TODAY}" "${LOG_FILE}" "${count_today}"
