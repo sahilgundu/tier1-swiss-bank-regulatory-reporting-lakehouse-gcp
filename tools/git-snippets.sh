@@ -50,3 +50,8 @@ git commit -m "chore: add one-click log_and_push.sh"
 git fetch "$REMOTE" || true
 git switch "$BRANCH" >/dev/null 2>&1 || git checkout "$BRANCH"
 git pull --rebase "$REMOTE" "$BRANCH"
+git add -- "$SNIPPETS"
+git commit -m "log: append today's git history (auto via log_and_push.sh)"
+git push "$REMOTE" "$BRANCH"
+git add tools/log_and_push.sh .gitattributes
+git commit -m "chore: add one-click tools/log_and_push.sh"
