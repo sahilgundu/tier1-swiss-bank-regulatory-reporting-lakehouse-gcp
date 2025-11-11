@@ -1,5 +1,17 @@
 flowchart LR
-    B --> C[Silver (BigQuery)]
-    C --> D[Gold (BigQuery)]
-    B -. DLQ .-> E[Dead-letter bucket]
-  
+  A[Sources] --> B[Bronze (GCS)]
+  B --> C[Silver (BigQuery)]
+  C --> D[Gold (BigQuery)]
+  B -. DLQ .-> E[Dead-letter bucket]
+
+flowchart TB
+  subgraph Perimeter[VPC‑SC + CMEK]
+    DS[(Ingestion)]
+    LS[Bronze]
+    SS[Silver]
+    BQ[(BigQuery raw/stage/gold)]
+    CMP[Orchestration]
+    DLP[PII Controls]
+  end
+  DS --> LS --> SS --> BQ --> EX[Exports]
+  CMP -. schedules .-> DS & SS & BQ & EX
