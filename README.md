@@ -40,6 +40,7 @@ flowchart TB
 - **Glossary** → [docs/glossary.md](docs/glossary.md)
 - **FAQ** → [docs/faq.md](docs/faq.md)
 - **Risk Log** → [docs/risk-log.md](docs/risk-log.md)
+- **Runbooks quick link:** see [RUNBOOK.md](RUNBOOK.md).
 
 > Note: This is a **docs-only** repo. Folders `dbt/`, `composer/`, and `sql/` are placeholders to show production structure.
 
