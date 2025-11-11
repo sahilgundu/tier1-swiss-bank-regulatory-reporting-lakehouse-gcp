@@ -1,5 +1,8 @@
 flowchart LR
-  A[Sources] --> B[Bronze (GCS)]
-  B --> C[Silver (BigQuery)]
-  C --> D[Gold (BigQuery)]
+  subgraph
+    A[Sources] --> B[Bronze (GCS)]
+    B --> C[Silver (BigQuery)]
+    C --> D[Gold (BigQuery)]
+  end
   B -. DLQ .-> E[Dead-letter bucket]
+  
