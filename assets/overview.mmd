@@ -1,5 +1,2 @@
-flowchart LR
-  A[On‑prem Sources] --> B[Bronze (GCS)]
-  B --> C[Silver (Validated)]
-  C --> D[BigQuery Gold]
-  D --> E[Exports (XBRL/CSV + manifest + checksums) → RegOps]
+flowchart LR A[Sources] --> B[Bronze (GCS)] --> C[Silver (BigQuery)] --> D[Gold (BigQuery)] B -. DLQ .-> E[Dead-letter bucket]
+
