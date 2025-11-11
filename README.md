@@ -1,8 +1,14 @@
 # Regulatory Reporting Lakehouse — Tier-1 Swiss Bank (GCP) · Sanitized Case Study
 
+[![Docs](https://img.shields.io/badge/docs-complete-blue)](https://github.com/Sahilg135/tier1-swiss-bank-regulatory-reporting-lakehouse-gcp/tree/main/docs)
+[![Version](https://img.shields.io/badge/version-v0.1.0-green)](https://github.com/Sahilg135/tier1-swiss-bank-regulatory-reporting-lakehouse-gcp/releases)
+[![CI](https://github.com/Sahilg135/tier1-swiss-bank-regulatory-reporting-lakehouse-gcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Sahilg135/tier1-swiss-bank-regulatory-reporting-lakehouse-gcp/actions)
+[![Pre-Commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+[![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey)](https://github.com/Sahilg135/tier1-swiss-bank-regulatory-reporting-lakehouse-gcp/blob/main/LICENSE)
+
+
 > **Docs-only, sanitized case study.** No executable code. Names/data are illustrative; patterns are production-style and interview-ready.
 
-![Docs](https://img.shields.io/badge/docs-complete-blue) ![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey)
 
 > ⚙️ **Note on Structure:**  
 > This repository represents a **docs-only case study**.  
